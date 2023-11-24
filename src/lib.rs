@@ -204,8 +204,3 @@ impl<'a, C: HasHint + Ord> Manager<'a, C> {
         borrowed_vec.extend(borrowed_vec_new.drain(..));
     }
 }
-
-// ==== USER CODE ===== //
-
-
-
