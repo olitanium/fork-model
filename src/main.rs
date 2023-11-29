@@ -1,4 +1,4 @@
-use fork_model::{self, HasHint, Process};
+use fork_model::{self};
 
 type Cargo = f32;
 
@@ -40,12 +40,12 @@ impl fork_model::HasHint for Model {
 }
 
 fn main() {
-    let code: Vec<fork_model::CodeLine<Model>> = vec![];
+    let code: Vec<fork_model::CodeLine<Model, i32>> = vec![];
     let mut manager = fork_model::Manager::new(Model {}, code.clone());
 
     loop {
         manager.execute();
         manager.prune(10, 2);
-        println!("{}", manager);
+        println!("{:?}", manager);
     }
 }

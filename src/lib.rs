@@ -39,30 +39,30 @@ pub trait HasHint {
     type Hint: Default + Clone;
 }
 
-pub type CodeLine<C> = fn(&mut C, &<C as HasHint>::Hint) -> Vec<<C as HasHint>::Hint>;
+pub type CodeLine<C, H> = fn(&mut C, &H) -> Vec<H>;
 
 #[derive(Clone)]
-pub struct Process<C: HasHint> {
-    code: std::rc::Rc<Vec<CodeLine<C>>>,
+pub struct Process<C, H> {
+    code: std::rc::Rc<Vec<CodeLine<C, H>>>,
     instruction_ptr: usize,
     
     content: C,
-    curr_hint: C::Hint,
+    curr_hint: H,
 }
 
-impl<C: HasHint + core::fmt::Debug> core::fmt::Debug for Process<C> {
+impl<C: core::fmt::Debug, H> core::fmt::Debug for Process<C, H> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.content.fmt(f)
     }
 }
 
-impl<C: HasHint + core::fmt::Display> core::fmt::Display for Process<C> {
+impl<C: core::fmt::Display, H> core::fmt::Display for Process<C, H> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         self.content.fmt(f)
     }
 }
 
-impl<C: HasHint> core::ops::Deref for Process<C> {
+impl<C, H> core::ops::Deref for Process<C, H> {
     type Target = C;
 
     fn deref(&self) -> &Self::Target {
@@ -70,26 +70,26 @@ impl<C: HasHint> core::ops::Deref for Process<C> {
     }
 }
 
-impl<C: HasHint> core::ops::DerefMut for Process<C> {
+impl<C, H> core::ops::DerefMut for Process<C, H> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.content
     }
 }
 
-impl<C: HasHint> Process<C> {
-    pub fn new(content: C, code: Vec<CodeLine<C>>) -> Self {
+impl<C, H: Default> Process<C, H> {
+    pub fn new(content: C, code: Vec<CodeLine<C, H>>) -> Self {
         Self {
             code: std::rc::Rc::new(code),
             content,
             
             instruction_ptr: 0,
-            curr_hint: C::Hint::default(),
+            curr_hint: H::default(),
         }
     }
 }
 
-impl<C: Clone + HasHint> Process<C> {
-    fn execute_fork(&mut self, manager: &mut Manager<C>) -> () {
+impl<C: Clone, H: Clone> Process<C, H> {
+    fn execute_fork(&mut self, manager: &mut Manager<C, H>) -> () {
         for codeline in &self.code.clone()[self.instruction_ptr..] {           
             
             let mut hints = codeline(&mut self.content, &self.curr_hint); // Mutates the process and returns the list of hints for branching
@@ -109,9 +109,9 @@ impl<C: Clone + HasHint> Process<C> {
     }
 }
 
-impl<C: HasHint> Process<C> {
+impl<C, H> Process<C, H> {
     pub fn execute(&mut self) -> () {
-        for codeline in self.code.clone().iter() {
+        for codeline in self.code.iter() {
             let mut hints = codeline(&mut self.content, &self.curr_hint); // Mutates the process and returns the list of hints for branching
             match hints.pop() {
                 Some(val) => self.curr_hint = val,
@@ -121,26 +121,26 @@ impl<C: HasHint> Process<C> {
     }
 }
 
-impl<C: HasHint> Process<C> {
-    fn set_hint(&mut self, hint: C::Hint) {
+impl<C, H> Process<C, H> {
+    fn set_hint(&mut self, hint: H) {
         self.curr_hint = hint
     }    
 }
 
-pub struct Manager<C: HasHint> {
-    vec: Vec<Process<C>>,
+pub struct Manager<C, H> {
+    vec: Vec<Process<C, H>>,
     clock: usize,
 }
 
 
-impl<C: HasHint + std::fmt::Debug> std::fmt::Display for Manager<C> {
+impl<C: std::fmt::Debug, H> std::fmt::Debug for Manager<C, H> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Clock: {}, Processes: {:?}", self.clock(), self.vec)
     }
 } 
 
-impl<C: HasHint> Manager<C> {
-    pub fn new(content: C, code: Vec<CodeLine<C>>) -> Self {
+impl<C, H: Default> Manager<C, H> {
+    pub fn new(content: C, code: Vec<CodeLine<C, H>>) -> Self {
         Self {
             vec: vec![Process::new(content, code)],
             clock: 0,
@@ -148,7 +148,7 @@ impl<C: HasHint> Manager<C> {
     }
 }
 
-impl<C: HasHint> Manager<C> {
+impl<C, H> Manager<C, H> {
     pub fn empty() -> Self {
         Self {
             vec: vec![],
@@ -157,20 +157,20 @@ impl<C: HasHint> Manager<C> {
     }
 }
 
-impl<C: HasHint> Manager<C> {
-    pub fn add_process(&mut self, new_process: Process<C>) {
+impl<C, H> Manager<C, H> {
+    pub fn add_process(&mut self, new_process: Process<C, H>) {
         self.vec.push(new_process);
     }
 }
 
-impl<C: HasHint> Manager<C> {
+impl<C, H> Manager<C, H> {
     pub fn clock(&self) -> usize {
         self.clock
     }
 }
 
-impl<C: HasHint + Clone> Manager<C> {
-    fn fork(&mut self, process: &mut Process<C>, hint: C::Hint) {
+impl<C: Clone, H: Clone> Manager<C, H> {
+    fn fork(&mut self, process: &mut Process<C, H>, hint: H) {
         let mut new_process = process.clone();
         new_process.set_hint(hint);
         
@@ -178,7 +178,7 @@ impl<C: HasHint + Clone> Manager<C> {
     }
 }
 
-impl<C: HasHint + Clone> Manager<C> {
+impl<C: Clone, H: Clone> Manager<C, H> {
     pub fn execute(&mut self) {
         let mut start_index = 0;
         let mut temp_manager = Manager::empty();
@@ -211,7 +211,7 @@ impl<C: HasHint + Clone> Manager<C> {
     }
 } */
 
-impl<C: HasHint + Ord> Manager<C> {   
+impl<C: Ord, H> Manager<C, H> {   
     pub fn prune(&mut self, range: usize, step: usize) {
         if self.vec.len() > range {
             self.vec.sort_unstable_by(
