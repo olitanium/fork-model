@@ -1,47 +1,9 @@
-use fork_model::{self};
-
-type Cargo = f32;
-
-enum VesselMethod {
-    ROAD,
-    SEA,
-    AIR,
-}
-
-enum QueueMode {
-    LOAD,
-    UNLOAD,
-    PASS,
-}
-
-struct VesselConfig {
-    name: std::string::String,
-    method: VesselMethod,
-    capacity: Cargo,
-    speed: f32,
-    volume: i32,
-}
-
-struct Vessel {
-    config: VesselConfig,
-    destination: std::string::String,
-    time_to_run: f32,
-    contents: Cargo,
-    queue_mode: QueueMode, 
-    ready_to_leave: bool,
-}
-
-
-#[derive(Clone, Eq, Ord, PartialEq, PartialOrd, Debug)]
-struct Model {}
-
-impl fork_model::HasHint for Model {
-    type Hint = std::string::String;
-}
-
 fn main() {
-    let code: Vec<fork_model::CodeLine<Model, i32>> = vec![];
-    let mut manager = fork_model::Manager::new(Model {}, code.clone());
+    let code: Vec<fork_model::CodeLine<i32, i32>> = vec![
+        |model: &mut i32, _: &i32| { *model += 1; return vec![1, 2]},
+        |model: &mut i32, hint: &i32| {*model += hint; return vec![]}
+    ];
+    let mut manager = fork_model::Manager::new(0, code.clone());
 
     loop {
         manager.execute();
