@@ -1,0 +1,17 @@
+[ 0..Len() )
+
+[ 0..x )  + [x+s, x+2s, Len() ) = N
+
+x + (len - x)
+
+
+......* ......*  etc but don't include the last *
+
+
+n = (len-x)/b
+
+b = (len-x)/n
+
+
+
+0 to x-1, x+b, x+2b, x+3b, ..., x+nb
