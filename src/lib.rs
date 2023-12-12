@@ -1,7 +1,5 @@
 #![no_std]
 
-extern crate alloc;
-
 use core::{
     fmt,
     fmt::{
@@ -14,6 +12,7 @@ use core::{
     }
 };
 
+extern crate alloc;
 use alloc::{
     rc::Rc,
     vec,
@@ -21,11 +20,11 @@ use alloc::{
     borrow::ToOwned,
 };
 
-pub type CodeLine<C, H> = fn(&mut C, Option<H>) -> Vec<H>;
+pub type Code<C, H> = fn(&mut C, Option<H>) -> Vec<H>;
 
 #[derive(Clone)]
 pub struct Process<C, H> {
-    code: alloc::rc::Rc<Vec<CodeLine<C, H>>>,
+    code: alloc::rc::Rc<Vec<Code<C, H>>>,
     instruction_ptr: usize,
 
     content: C,
@@ -59,7 +58,7 @@ impl<C, H> DerefMut for Process<C, H> {
 }
 
 impl<C, H> Process<C, H> {
-    pub fn new(content: C, code: &[CodeLine<C, H>]) -> Self {
+    pub fn new(content: C, code: &[Code<C, H>]) -> Self {
         Self {
             code: Rc::new(code.to_owned()),
             content,
@@ -126,7 +125,7 @@ impl<C: core::fmt::Debug, H> core::fmt::Debug for Manager<C, H> {
 }
 
 impl<C, H> Manager<C, H> {
-    pub fn new(content: C, code: &[CodeLine<C, H>]) -> Self {
+    pub fn new(content: C, code: &[Code<C, H>]) -> Self {
         Self {
             vec: vec![Process::new(content, code)],
             clock: 0,
@@ -138,6 +137,15 @@ impl<C, H> Manager<C, H> {
     pub fn empty() -> Self {
         Self {
             vec: vec![],
+            clock: 0,
+        }
+    }
+}
+
+impl<C, H> From<Process<C, H>> for Manager<C, H> {
+    fn from(value: Process<C, H>) -> Self {
+        Self {
+            vec: vec![value],
             clock: 0,
         }
     }
@@ -180,7 +188,7 @@ impl<C: Clone, H: Clone> Manager<C, H> {
 
             start_index = self.vec.len();
 
-            self.vec.extend(temp_manager.vec.drain(..));
+            self.vec.append(&mut temp_manager.vec);
         }
 
         self.clock += 1
